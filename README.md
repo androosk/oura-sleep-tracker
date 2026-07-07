@@ -76,6 +76,14 @@ npm install
 npx expo start --ios
 ```
 
+> **OAuth in Expo Go:** Expo Go can't own the `ourasleep://` scheme, so the
+> login redirect becomes an `exp://<your-lan-ip>:8081/--/callback` URL and
+> Oura answers `400 invalid_request` until you register it. The connect
+> screen shows the exact URI in dev builds — add it as an additional
+> redirect URI in your Oura application while developing, and remove it
+> when you're done. Real builds (EAS or `expo run:ios`) use
+> `ourasleep://callback` as registered and don't need this.
+
 **On your iPhone via EAS Build (recommended):**
 
 ```bash

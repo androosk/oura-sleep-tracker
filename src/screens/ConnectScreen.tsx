@@ -12,9 +12,20 @@ import { useTheme } from '../theme/ThemeProvider';
 export interface ConnectScreenProps {
   onConnect(): void;
   loggedOutReason?: 'session-expired';
+  /**
+   * The redirect URI the OAuth request will actually use. Shown only in dev
+   * builds: under Expo Go it resolves to an exp:// URL that must be
+   * registered in the user's Oura application, and seeing the exact value
+   * beats guessing it from Metro's banner.
+   */
+  devRedirectUri?: string;
 }
 
-export function ConnectScreen({ onConnect, loggedOutReason }: ConnectScreenProps): ReactElement {
+export function ConnectScreen({
+  onConnect,
+  loggedOutReason,
+  devRedirectUri,
+}: ConnectScreenProps): ReactElement {
   const theme = useTheme();
   return (
     <View style={styles.container}>
@@ -36,6 +47,15 @@ export function ConnectScreen({ onConnect, loggedOutReason }: ConnectScreenProps
           {strings.connect.button}
         </Text>
       </Pressable>
+      {__DEV__ && devRedirectUri && (
+        <Text
+          testID="connect-dev-redirect"
+          selectable
+          style={[styles.devRedirect, { color: theme.textSecondary }]}
+        >
+          {`${strings.connect.devRedirectLabel} ${devRedirectUri}`}
+        </Text>
+      )}
     </View>
   );
 }
@@ -65,5 +85,10 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  devRedirect: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 24,
   },
 });
