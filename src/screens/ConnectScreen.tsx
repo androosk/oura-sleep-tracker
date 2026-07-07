@@ -11,7 +11,7 @@ import { useTheme } from '../theme/ThemeProvider';
 
 export interface ConnectScreenProps {
   onConnect(): void;
-  loggedOutReason?: 'session-expired';
+  loggedOutReason?: 'session-expired' | 'login-failed';
   /**
    * The redirect URI the OAuth request will actually use. Shown only in dev
    * builds: under Expo Go it resolves to an exp:// URL that must be
@@ -36,6 +36,14 @@ export function ConnectScreen({
           style={[styles.message, { color: theme.textSecondary }]}
         >
           {strings.errors.loggedOut}
+        </Text>
+      )}
+      {loggedOutReason === 'login-failed' && (
+        <Text
+          testID="connect-login-failed-message"
+          style={[styles.message, { color: theme.textSecondary }]}
+        >
+          {strings.errors.loginFailed}
         </Text>
       )}
       <Pressable

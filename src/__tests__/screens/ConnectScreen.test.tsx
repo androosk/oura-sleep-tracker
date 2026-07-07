@@ -22,6 +22,13 @@ describe('ConnectScreen (US-003)', () => {
     expect(queryByTestId('connect-logged-out-message')).toBeNull();
   });
 
+  it('states factually when a login attempt did not complete', () => {
+    const { getByTestId } = render(
+      <ConnectScreen onConnect={() => {}} loggedOutReason="login-failed" />,
+    );
+    expect(getByTestId('connect-login-failed-message')).toBeTruthy();
+  });
+
   // __DEV__ is true under Jest; in a production build the line is hidden
   // regardless of the prop.
   it('shows the computed redirect URI in development so it can be registered', () => {
