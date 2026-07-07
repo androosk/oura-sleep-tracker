@@ -12,8 +12,9 @@ own device and Oura's own services.
 
 - Your Oura API application's client ID and secret, and your OAuth tokens —
   in the iOS Keychain.
-- A local cache of your sleep data, so the app works offline — in the app's
-  private storage.
+- A local cache of your sleep data, so the app works offline — stored as
+  AES-256-GCM ciphertext in the app's private storage, with the encryption
+  key in the iOS Keychain.
 
 **What this app collects, transmits, or sells: nothing.** No analytics, no
 telemetry, no ads, no third-party SDKs that phone home.
