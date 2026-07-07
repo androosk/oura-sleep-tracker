@@ -118,6 +118,7 @@ export function AppRoot(): ReactElement {
             if (request) void promptAsync();
           }}
           loggedOutReason={sessionExpired ? 'session-expired' : undefined}
+          devRedirectUri={redirectUri}
         />
       );
       break;

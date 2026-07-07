@@ -21,4 +21,19 @@ describe('ConnectScreen (US-003)', () => {
     const { queryByTestId } = render(<ConnectScreen onConnect={() => {}} />);
     expect(queryByTestId('connect-logged-out-message')).toBeNull();
   });
+
+  // __DEV__ is true under Jest; in a production build the line is hidden
+  // regardless of the prop.
+  it('shows the computed redirect URI in development so it can be registered', () => {
+    const { getByTestId, getByText } = render(
+      <ConnectScreen onConnect={() => {}} devRedirectUri="exp://192.168.0.91:8081/--/callback" />,
+    );
+    expect(getByTestId('connect-dev-redirect')).toBeTruthy();
+    expect(getByText(/exp:\/\/192\.168\.0\.91:8081\/--\/callback/)).toBeTruthy();
+  });
+
+  it('shows no redirect URI line when none is provided', () => {
+    const { queryByTestId } = render(<ConnectScreen onConnect={() => {}} />);
+    expect(queryByTestId('connect-dev-redirect')).toBeNull();
+  });
 });

@@ -32,6 +32,8 @@ export const strings = {
   connect: {
     title: 'Connect to Oura',
     button: 'Log in with Oura',
+    devRedirectLabel:
+      'Development redirect URI — register this in your Oura application while testing in Expo Go:',
   },
   errors: {
     loggedOut: 'The Oura session expired. Log in again to resume syncing.',
