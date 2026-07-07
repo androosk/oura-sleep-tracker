@@ -1,3 +1,5 @@
+import { addDays } from '../lib/syncPlanner';
+
 import { OuraAuthError, OuraHttpError, OuraNetworkError, OuraRateLimitError } from './errors';
 import { parseDailySleepResponse, parseSleepResponse } from './schemas';
 
@@ -83,7 +85,14 @@ export function createOuraClient(deps: OuraClientDeps): OuraClient {
     const documents: T[] = [];
     let nextToken: string | null = null;
     do {
-      const params = new URLSearchParams({ start_date: range.start, end_date: range.end });
+      // Callers pass an inclusive day range; Oura's end_date is exclusive
+      // (sandbox-verified 2026-07-07 — start=end returns nothing, and the
+      // newest day's sessions were silently missing live), so ask for one
+      // day past the end.
+      const params = new URLSearchParams({
+        start_date: range.start,
+        end_date: addDays(range.end, 1),
+      });
       if (nextToken) params.set('next_token', nextToken);
       const page = parse(await requestPage(path, params));
       documents.push(...page.data);

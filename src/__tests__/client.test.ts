@@ -53,8 +53,18 @@ describe('OuraClient (US-004)', () => {
     await client.fetchDailySleep(range);
     expect(requestUrl(0)).toContain('/v2/usercollection/daily_sleep');
     expect(requestUrl(0)).toContain('start_date=2026-04-08');
-    expect(requestUrl(0)).toContain('end_date=2026-07-06');
+    // Oura treats end_date as exclusive (verified against the sandbox
+    // 2026-07-07: start=end returns nothing; live it cost us last night's
+    // sessions). The client owns the wire format: callers pass an INCLUSIVE
+    // day range, the request goes out with end_date = end + 1 day.
+    expect(requestUrl(0)).toContain('end_date=2026-07-07');
     expect(requestHeaders(0)['Authorization']).toBe('Bearer token-1');
+  });
+
+  it('rolls end_date across month boundaries', async () => {
+    const { client, requestUrl } = makeClient([response(200, okPage(null))]);
+    await client.fetchDailySleep({ start: '2026-04-01', end: '2026-04-30' });
+    expect(requestUrl(0)).toContain('end_date=2026-05-01');
   });
 
   it('follows next_token pagination and concatenates pages', async () => {

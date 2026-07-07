@@ -17,6 +17,11 @@ function toIsoDate(utcMs: number): IsoDate {
   return new Date(utcMs).toISOString().slice(0, 10);
 }
 
+/** Calendar-day arithmetic in UTC (immune to DST). */
+export function addDays(day: IsoDate, delta: number): IsoDate {
+  return toIsoDate(toUtcMs(day) + delta * DAY_MS);
+}
+
 /** A 90-day inclusive window ending today. */
 export function initialSyncRange(today: IsoDate): DateRange {
   return { start: toIsoDate(toUtcMs(today) - 89 * DAY_MS), end: today };
