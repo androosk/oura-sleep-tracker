@@ -1,0 +1,20 @@
+{
+  "data": [
+    {
+      "id": "daily-realistic-2026-07-03",
+      "contributors": {
+        "deep_sleep": 88,
+        "efficiency": 98,
+        "latency": 76,
+        "rem_sleep": 85,
+        "restfulness": 70,
+        "timing": 61,
+        "total_sleep": 90
+      },
+      "day": "2026-07-03",
+      "score": 82,
+      "timestamp": "2026-07-03T00:00:00+00:00"
+    }
+  ],
+  "next_token": null
+}
