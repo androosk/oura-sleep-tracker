@@ -1,13 +1,15 @@
 {
   "expo": {
-    "name": "oura-scaffold",
-    "slug": "oura-scaffold",
-    "version": "1.0.0",
+    "name": "Oura Sleep",
+    "slug": "oura-sleep-tracker",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "ourasleep",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.androosk.ourasleeptracker"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,6 +23,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": ["expo-secure-store", "expo-web-browser"]
   }
 }

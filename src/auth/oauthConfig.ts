@@ -1,16 +1,7 @@
-import { NotImplementedError } from '../lib/notImplemented';
-
 /**
  * Pure builders for the OAuth2 wire format (authorization-code flow).
  * Keeping these as data-in/data-out functions makes the security-sensitive
  * parts of auth directly unit-testable.
- *
- * Contract (src/__tests__/oauthConfig.test.ts):
- * - Authorize URL targets cloud.ouraring.com/oauth/authorize with
- *   response_type=code, client_id, redirect_uri, space-joined scope, and a
- *   caller-supplied state value (CSRF protection).
- * - Code-exchange and refresh bodies are form-encoded with the exact
- *   grant_type/parameter names the token endpoint expects.
  */
 
 export const OURA_AUTHORIZE_URL = 'https://cloud.ouraring.com/oauth/authorize';
@@ -26,8 +17,15 @@ export interface AuthorizeParams {
   scopes: string[];
 }
 
-export function buildAuthorizeUrl(_params: AuthorizeParams): string {
-  throw new NotImplementedError('buildAuthorizeUrl');
+export function buildAuthorizeUrl(params: AuthorizeParams): string {
+  const query = new URLSearchParams({
+    response_type: 'code',
+    client_id: params.clientId,
+    redirect_uri: params.redirectUri,
+    scope: params.scopes.join(' '),
+    state: params.state,
+  });
+  return `${OURA_AUTHORIZE_URL}?${query.toString()}`;
 }
 
 export interface CodeExchangeParams {
@@ -38,8 +36,14 @@ export interface CodeExchangeParams {
 }
 
 /** URLSearchParams-encoded body for exchanging an authorization code. */
-export function buildCodeExchangeBody(_params: CodeExchangeParams): string {
-  throw new NotImplementedError('buildCodeExchangeBody');
+export function buildCodeExchangeBody(params: CodeExchangeParams): string {
+  return new URLSearchParams({
+    grant_type: 'authorization_code',
+    code: params.code,
+    client_id: params.clientId,
+    client_secret: params.clientSecret,
+    redirect_uri: params.redirectUri,
+  }).toString();
 }
 
 export interface RefreshParams {
@@ -49,6 +53,11 @@ export interface RefreshParams {
 }
 
 /** URLSearchParams-encoded body for the refresh_token grant. */
-export function buildRefreshBody(_params: RefreshParams): string {
-  throw new NotImplementedError('buildRefreshBody');
+export function buildRefreshBody(params: RefreshParams): string {
+  return new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: params.refreshToken,
+    client_id: params.clientId,
+    client_secret: params.clientSecret,
+  }).toString();
 }

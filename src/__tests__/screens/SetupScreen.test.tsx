@@ -28,6 +28,6 @@ describe('SetupScreen (US-002)', () => {
 
   it('explains where to register the OAuth app', () => {
     const { getByText } = render(<SetupScreen onSave={() => {}} />);
-    expect(getByText(/cloud\.ouraring\.com/)).toBeTruthy();
+    expect(getByText(/developer\.ouraring\.com/)).toBeTruthy();
   });
 });

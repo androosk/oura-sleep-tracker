@@ -1,15 +1,8 @@
-import { NotImplementedError } from '../lib/notImplemented';
-
 /**
  * Persistence for the user's own OAuth application credentials.
  * Backed by expo-secure-store (iOS Keychain) in the app; the interface is
  * injected so tests run against an in-memory fake. Credentials must never
  * touch AsyncStorage, logs, or error messages.
- *
- * Contract (src/__tests__/credentialStore.test.ts):
- * - save/load round-trips a credential pair.
- * - load resolves null before anything was saved.
- * - clear removes both values; a following load resolves null.
  */
 
 export interface OAuthCredentials {
@@ -30,6 +23,26 @@ export interface CredentialStore {
   clear(): Promise<void>;
 }
 
-export function createCredentialStore(_kv: SecureKV): CredentialStore {
-  throw new NotImplementedError('createCredentialStore');
+const CLIENT_ID_KEY = 'oura.oauth.clientId';
+const CLIENT_SECRET_KEY = 'oura.oauth.clientSecret';
+
+export function createCredentialStore(kv: SecureKV): CredentialStore {
+  return {
+    async save(credentials) {
+      await kv.setItemAsync(CLIENT_ID_KEY, credentials.clientId);
+      await kv.setItemAsync(CLIENT_SECRET_KEY, credentials.clientSecret);
+    },
+
+    async load() {
+      const clientId = await kv.getItemAsync(CLIENT_ID_KEY);
+      const clientSecret = await kv.getItemAsync(CLIENT_SECRET_KEY);
+      if (clientId === null || clientSecret === null) return null;
+      return { clientId, clientSecret };
+    },
+
+    async clear() {
+      await kv.deleteItemAsync(CLIENT_ID_KEY);
+      await kv.deleteItemAsync(CLIENT_SECRET_KEY);
+    },
+  };
 }

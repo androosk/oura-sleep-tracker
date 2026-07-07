@@ -1,33 +1,42 @@
-import { NotImplementedError } from './notImplemented';
-
 import type { IsoDate, LocalizedTimestamp } from '../api/types';
 
 /**
  * Display formatting. All functions are pure; timezone comes from the device
  * (fixed to America/Chicago in jest.config.js so tests are deterministic).
- *
- * Contract (src/__tests__/format.test.ts):
- * - formatDuration: 27120 -> '7h 32m', 2700 -> '45m', 0 -> '0m'; rounds to
- *   the nearest minute.
- * - formatClockTime: converts the timestamp's own offset to device-local
- *   12-hour time, e.g. '2026-07-02T23:41:00-07:00' -> '1:41 AM' in Chicago.
- * - formatPercent: 98 -> '98%'.
- * - formatDayLabel: treats IsoDate as a calendar date (never shifted by
- *   timezone math), '2026-07-03' -> 'Fri, Jul 3'.
  */
 
 export function formatDuration(seconds: number): string {
-  throw new NotImplementedError(`formatDuration(${seconds})`);
+  const totalMinutes = Math.round(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-export function formatClockTime(_timestamp: LocalizedTimestamp): string {
-  throw new NotImplementedError('formatClockTime');
+export function formatClockTime(timestamp: LocalizedTimestamp): string {
+  return new Date(timestamp).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
-export function formatPercent(_value: number): string {
-  throw new NotImplementedError('formatPercent');
+export function formatPercent(value: number): string {
+  return `${value}%`;
 }
 
-export function formatDayLabel(_day: IsoDate): string {
-  throw new NotImplementedError('formatDayLabel');
+/** Today as a calendar date in the device's local timezone. */
+export function localToday(): IsoDate {
+  // en-CA formats as YYYY-MM-DD; toISOString would give the UTC date, which
+  // is tomorrow during a Chicago evening.
+  return new Date().toLocaleDateString('en-CA');
+}
+
+export function formatDayLabel(day: IsoDate): string {
+  // Construct from components so the calendar date is never shifted by
+  // timezone math (parsing '2026-07-03' as a Date would read it as UTC).
+  const [year, month, dayOfMonth] = day.split('-').map(Number);
+  return new Date(year, month - 1, dayOfMonth).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
 }

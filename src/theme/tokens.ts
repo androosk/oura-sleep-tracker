@@ -4,11 +4,6 @@
  * literals). Dark is the primary design target, in the style of the official
  * Oura app: deep navy surfaces, teal/cyan accents. Light mode derives from
  * the same token names.
- *
- * Contract (src/__tests__/theme.test.tsx):
- * - darkTheme and lightTheme expose identical token keys with different
- *   background values.
- * - Score and stage colors are distinct within a theme.
  */
 
 export interface ThemeTokens {
@@ -29,24 +24,38 @@ export interface ThemeTokens {
   divider: string;
 }
 
-// Placeholder values — the real palette is an implementation task (US-011).
-const placeholder: ThemeTokens = {
-  background: '',
-  surface: '',
-  textPrimary: '',
-  textSecondary: '',
-  accent: '',
-  scoreOptimal: '',
-  scoreGood: '',
-  scoreAttention: '',
-  scoreNone: '',
-  stageDeep: '',
-  stageRem: '',
-  stageLight: '',
-  stageAwake: '',
-  chartLine: '',
-  divider: '',
+export const darkTheme: ThemeTokens = {
+  background: '#0C1420',
+  surface: '#16202E',
+  textPrimary: '#ECF1F7',
+  textSecondary: '#8A98A8',
+  accent: '#5AC8D8',
+  scoreOptimal: '#4FD8C4',
+  scoreGood: '#A9BED6',
+  scoreAttention: '#E08A6D',
+  scoreNone: '#5A6675',
+  stageDeep: '#2E5D9F',
+  stageRem: '#9BC4F5',
+  stageLight: '#5B8FD9',
+  stageAwake: '#C8D6E8',
+  chartLine: '#5AC8D8',
+  divider: '#243244',
 };
 
-export const darkTheme: ThemeTokens = { ...placeholder };
-export const lightTheme: ThemeTokens = { ...placeholder };
+export const lightTheme: ThemeTokens = {
+  background: '#F4F6F9',
+  surface: '#FFFFFF',
+  textPrimary: '#1A2635',
+  textSecondary: '#5C6B7C',
+  accent: '#0E8A9C',
+  scoreOptimal: '#0FA98F',
+  scoreGood: '#4A6FA5',
+  scoreAttention: '#C4633F',
+  scoreNone: '#9AA7B5',
+  stageDeep: '#1F4E8C',
+  stageRem: '#8FB4E8',
+  stageLight: '#4A7EC2',
+  stageAwake: '#A8B9CE',
+  chartLine: '#0E8A9C',
+  divider: '#DCE3EC',
+};

@@ -1,15 +1,9 @@
-import { NotImplementedError } from './notImplemented';
-
 import type { SampleSeries } from '../api/types';
 
 /**
- * Prepares sampled overnight series (HR, HRV) for charting.
- *
- * Contract (src/__tests__/series.test.ts):
- * - null items split the series into separate polyline runs: gaps stay gaps,
- *   the chart must not interpolate across missing readings.
- * - Offsets are seconds from the series start (index * interval).
- * - A series that is all nulls yields [].
+ * Prepares sampled overnight series (HR, HRV) for charting. null items split
+ * the series into separate polyline runs: gaps stay gaps, the chart must not
+ * interpolate across missing readings.
  */
 
 export interface SeriesPoint {
@@ -17,6 +11,21 @@ export interface SeriesPoint {
   value: number;
 }
 
-export function splitSeriesAtGaps(_series: SampleSeries): SeriesPoint[][] {
-  throw new NotImplementedError('splitSeriesAtGaps');
+export function splitSeriesAtGaps(series: SampleSeries): SeriesPoint[][] {
+  const runs: SeriesPoint[][] = [];
+  let current: SeriesPoint[] = [];
+  series.items.forEach((value, index) => {
+    if (value === null) {
+      if (current.length > 0) {
+        runs.push(current);
+        current = [];
+      }
+      return;
+    }
+    current.push({ offsetSeconds: index * series.interval, value });
+  });
+  if (current.length > 0) {
+    runs.push(current);
+  }
+  return runs;
 }

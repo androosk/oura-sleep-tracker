@@ -163,7 +163,7 @@ The app is for personal use but will be open-sourced (shared on Reddit), so setu
 
 **Acceptance Criteria:**
 
-- [ ] README covers: creating an Oura OAuth application (with the redirect URI to enter), prerequisites (Xcode, Node, Apple Developer account), install/run steps, and screenshots
+- [ ] README covers: creating an Oura OAuth application (with the redirect URI to enter), prerequisites (Node, Expo account, Apple Developer account), EAS build/submit steps (with a local `npx expo run:ios` alternative for non-EAS users), and screenshots
 - [ ] LICENSE file (MIT unless the author decides otherwise)
 - [ ] A stranger-facing "what this is / what this deliberately isn't" section (no readiness, no advice)
 
@@ -197,7 +197,7 @@ The app is for personal use but will be open-sourced (shared on Reddit), so setu
 - No readiness, activity, workouts, stress, SpO2, temperature, cycle tracking — sleep only.
 - No wellness advice, insights, coaching copy, streaks, or notifications of any kind.
 - No Android support (code shouldn't gratuitously block it, but it is never tested).
-- No App Store / TestFlight distribution pipeline — install from Xcode with a paid developer account.
+- No public App Store listing — personal installs via EAS Build → TestFlight/Apple with a paid developer account.
 - No Apple Health integration.
 - No backend server — the phone talks directly to the Oura API.
 - Naps are not displayed in v1 (data model keeps them distinguishable for later).
@@ -216,7 +216,7 @@ The app is for personal use but will be open-sourced (shared on Reddit), so setu
 - **Oura API v2:** `GET /v2/usercollection/daily_sleep` (score, contributors), `GET /v2/usercollection/sleep` (sessions: `sleep_phase_5_min` hypnogram string, 5-min HR/HRV samples, durations, efficiency, latency, bed/wake timestamps, `type` for long_sleep vs. nap). Both paginate via `next_token`.
 - **OAuth:** authorize at `cloud.ouraring.com/oauth/authorize`, token exchange at `api.ouraring.com/oauth/token`. Refresh tokens are single-use — the refresh routine must persist the replacement token before retrying the original request. The user registers a redirect URI (custom scheme, e.g. `ourasleep://callback`) in their Oura OAuth app.
 - **Auth security note:** the client secret living on-device is an accepted tradeoff for a personal app where each user owns their own OAuth registration; the README must state this plainly. Secrets never appear in the repo, logs, or error messages. Per global rules, the auth code gets a security pass (/vibe-security) before it's called done.
-- **Distribution:** paid Apple Developer account; build and install via Xcode (`npx expo run:ios --device`). No EAS requirement.
+- **Distribution:** EAS Build → submit to Apple (the author's standard flow; keeps the native `ios/` directory out of git). Local `npx expo run:ios` remains a documented alternative for strangers who avoid EAS. Expo Go covers simulator development.
 - **Timezones:** Oura timestamps carry offsets; all display is converted to the device's local timezone. This is a classic bug farm — the contract should pin fixture-based tests here.
 
 ## Success Metrics

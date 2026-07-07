@@ -56,6 +56,8 @@ describe('string catalog (FR-7: descriptive, factual, no nannying)', () => {
   });
 
   it('setup explanation tells the user where to register their OAuth app (US-002)', () => {
-    expect(strings.setup.explanation).toContain('cloud.ouraring.com');
+    // Oura's developer portal moved to developer.ouraring.com (the old
+    // cloud.ouraring.com/oauth/applications URL redirects there).
+    expect(strings.setup.explanation).toContain('developer.ouraring.com');
   });
 });

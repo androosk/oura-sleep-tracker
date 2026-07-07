@@ -1,23 +1,29 @@
-import { NotImplementedError } from './notImplemented';
-
 import type { DateRange, IsoDate } from '../api/types';
 
 /**
  * Decides which date windows to fetch (FR-11: last 90 days up front, older
- * history lazily backfilled as the user scrolls).
- *
- * Contract (src/__tests__/syncPlanner.test.ts):
- * - initialSyncRange('2026-07-06') -> { start: '2026-04-08', end: '2026-07-06' }
- *   (a 90-day inclusive window ending today).
- * - nextBackfillRange('2026-04-08') -> { start: '2026-01-08', end: '2026-04-07' }
- *   (the adjacent 90-day inclusive window immediately before the oldest
- *   already-synced day).
+ * history lazily backfilled as the user scrolls). Date math runs in UTC so
+ * DST transitions can never shift a calendar day.
  */
 
-export function initialSyncRange(_today: IsoDate): DateRange {
-  throw new NotImplementedError('initialSyncRange');
+const DAY_MS = 86_400_000;
+
+function toUtcMs(day: IsoDate): number {
+  const [year, month, dayOfMonth] = day.split('-').map(Number);
+  return Date.UTC(year, month - 1, dayOfMonth);
 }
 
-export function nextBackfillRange(_oldestSyncedDay: IsoDate): DateRange {
-  throw new NotImplementedError('nextBackfillRange');
+function toIsoDate(utcMs: number): IsoDate {
+  return new Date(utcMs).toISOString().slice(0, 10);
+}
+
+/** A 90-day inclusive window ending today. */
+export function initialSyncRange(today: IsoDate): DateRange {
+  return { start: toIsoDate(toUtcMs(today) - 89 * DAY_MS), end: today };
+}
+
+/** The adjacent 90-day inclusive window before the oldest synced day. */
+export function nextBackfillRange(oldestSyncedDay: IsoDate): DateRange {
+  const oldest = toUtcMs(oldestSyncedDay);
+  return { start: toIsoDate(oldest - 90 * DAY_MS), end: toIsoDate(oldest - DAY_MS) };
 }
