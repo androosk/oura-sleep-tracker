@@ -37,6 +37,7 @@ export const strings = {
   },
   errors: {
     loggedOut: 'The Oura session expired. Log in again to resume syncing.',
+    loginFailed: 'The Oura login did not complete.',
     network: 'The Oura API could not be reached.',
     staleData: 'Offline. Showing data from the last sync.',
   },

@@ -9,6 +9,7 @@ import { OURA_AUTHORIZE_URL, OURA_TOKEN_URL, REQUIRED_SCOPES } from '../auth/oau
 import { exchangeCode, refreshTokens } from '../auth/tokenEndpoint';
 import { createTokenManager } from '../auth/tokenManager';
 import { ConnectScreen } from '../screens/ConnectScreen';
+import { createLoginExchanger } from './loginExchange';
 import { SetupScreen } from '../screens/SetupScreen';
 import { useTheme } from '../theme/ThemeProvider';
 import { MainTabs } from './MainTabs';
@@ -34,6 +35,7 @@ export function AppRoot(): ReactElement {
   const [stage, setStage] = useState<AuthStage>('checking');
   const [credentials, setCredentials] = useState<OAuthCredentials | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -80,20 +82,35 @@ export function AppRoot(): ReactElement {
     { authorizationEndpoint: OURA_AUTHORIZE_URL, tokenEndpoint: OURA_TOKEN_URL },
   );
 
+  // The exchanger dedupes replayed codes: Fast Refresh re-runs this effect
+  // with the same response, and authorization codes are single-use.
+  const exchanger = useMemo(() => {
+    if (!credentials) return null;
+    return createLoginExchanger({
+      exchange: (code) => exchangeCode({ ...credentials, redirectUri, code }),
+      store: secureTokenStore,
+      now: Date.now,
+    });
+  }, [credentials]);
+
   useEffect(() => {
-    if (response?.type !== 'success' || !credentials) return;
-    const code = response.params.code;
-    (async () => {
-      const tokens = await exchangeCode({ ...credentials, redirectUri, code });
-      await secureTokenStore.save({
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresAt: Date.now() + tokens.expiresInSeconds * 1000,
-      });
-      setSessionExpired(false);
-      setStage('ready');
-    })();
-  }, [response, credentials]);
+    if (response?.type !== 'success' || !exchanger) return;
+    let cancelled = false;
+    void exchanger.complete(response.params.code).then((outcome) => {
+      if (cancelled || outcome === 'duplicate') return;
+      if (outcome === 'completed') {
+        setSessionExpired(false);
+        setLoginFailed(false);
+        setStage('ready');
+      } else {
+        setLoginFailed(true);
+        setStage('needs-login');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [response, exchanger]);
 
   let body: ReactElement | null;
   switch (stage) {
@@ -117,7 +134,9 @@ export function AppRoot(): ReactElement {
           onConnect={() => {
             if (request) void promptAsync();
           }}
-          loggedOutReason={sessionExpired ? 'session-expired' : undefined}
+          loggedOutReason={
+            sessionExpired ? 'session-expired' : loginFailed ? 'login-failed' : undefined
+          }
           devRedirectUri={redirectUri}
         />
       );
