@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { localToday } from '../lib/format';
+import { groupNightsByDay } from '../lib/nights';
 import { initialSyncRange, nextBackfillRange } from '../lib/syncPlanner';
 
 import type { OuraClient } from '../api/client';
@@ -44,40 +45,41 @@ export function useSleepData(client: OuraClient): SleepData {
 
   return useMemo(() => {
     const dailyDocs = dailyQuery.data ?? [];
-    // Naps and rests stay out of the UI (non-goal) but remain in the cache.
-    const nightDocs = (sleepQuery.data ?? []).filter((doc) => doc.type === 'long_sleep');
+    // Which sessions count as "the night" — including short/fragmented
+    // 'sleep'-type nights, excluding naps and rests — is decided in
+    // src/lib/nights.ts. Excluded sessions remain in the cache.
+    const nightsByDay = groupNightsByDay(sleepQuery.data ?? []);
 
     const dailyByDay = new Map(dailyDocs.map((doc) => [doc.day, doc]));
-    const nightByDayMap = new Map(nightDocs.map((doc) => [doc.day, doc]));
-    const days = [...new Set([...dailyByDay.keys(), ...nightByDayMap.keys()])].sort();
+    const days = [...new Set([...dailyByDay.keys(), ...nightsByDay.keys()])].sort();
     const latestDay = days[days.length - 1];
 
     const isLoading = dailyQuery.isPending || sleepQuery.isPending;
     let homeStatus: HomeStatus;
     if (isLoading) homeStatus = 'loading';
     else if (days.length === 0) homeStatus = 'empty-window';
-    else if (!nightByDayMap.get(latestDay)) homeStatus = 'no-data-last-night';
+    else if (!nightsByDay.get(latestDay)) homeStatus = 'no-data-last-night';
     else homeStatus = 'ready';
 
     return {
       homeStatus,
       latestDaily: latestDay ? dailyByDay.get(latestDay) : undefined,
-      latestNight: latestDay ? nightByDayMap.get(latestDay) : undefined,
+      latestNight: latestDay ? nightsByDay.get(latestDay)?.primary : undefined,
       historyEntries: days.map((day) => ({
         day,
         score: dailyByDay.get(day)?.score ?? null,
-        totalSleepSeconds: nightByDayMap.get(day)?.total_sleep_duration ?? null,
+        totalSleepSeconds: nightsByDay.get(day)?.totalSleepSeconds ?? null,
       })),
       trendPoints: days.map((day) => ({
         day,
         score: dailyByDay.get(day)?.score ?? null,
-        totalSleepSeconds: nightByDayMap.get(day)?.total_sleep_duration ?? null,
+        totalSleepSeconds: nightsByDay.get(day)?.totalSleepSeconds ?? null,
       })),
-      nightByDay: (day) => ({ daily: dailyByDay.get(day), night: nightByDayMap.get(day) }),
+      nightByDay: (day) => ({ daily: dailyByDay.get(day), night: nightsByDay.get(day)?.primary }),
       loadOlder: () => setOldestDay((current) => nextBackfillRange(current).start),
       isStale:
         (dailyQuery.isError || sleepQuery.isError) &&
-        (dailyDocs.length > 0 || nightDocs.length > 0),
+        (dailyDocs.length > 0 || nightsByDay.size > 0),
     };
   }, [
     dailyQuery.data,
