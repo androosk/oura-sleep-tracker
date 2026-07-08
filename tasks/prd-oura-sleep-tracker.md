@@ -177,6 +177,29 @@ The app is for personal use but will be open-sourced (shared on Reddit), so setu
 - [ ] Period average shown as a plain number, no commentary
 - [ ] Typecheck/lint passes; verify on iOS Simulator (screenshot)
 
+### US-015: Composite fragmented-night view + Oura-likeness polish
+
+**Description:** As a polyphasic sleeper whose nights arrive from Oura as multiple `sleep`-type fragments, I want the whole broken night rendered as one continuous view — and the charts tightened up to match the Oura app's visual quality.
+
+**Acceptance Criteria:**
+
+Composite night (deterministic — `src/lib/composite.ts`):
+
+- [ ] A day's contributing sessions (`long_sleep` + `sleep`) stitch into one composite night spanning first `bedtime_start` → last `bedtime_end`
+- [ ] Each fragment's stages sit at their true clock offsets; between-fragment gaps render as awake segments (merging with adjacent awake stages)
+- [ ] Stage totals sum across fragments; time in bed = full span; time asleep = summed totals; efficiency recomputed as asleep/span; latency from the first fragment
+- [ ] HR/HRV samples from all fragments plot at true offsets; no line is drawn across gaps (between fragments or within); lowest HR = min across fragments, average HR/HRV weighted by fragment sleep duration
+- [ ] A single-fragment night produces values identical to that fragment (regression guard)
+- [ ] Unit tests for the composite builder; typecheck/lint passes
+
+UI polish (judgment — verified via evals/ui-oura-likeness.md screenshots, both modes):
+
+- [ ] Hypnogram: thin connectors between consecutive stage segments, near-square corners, butted blocks — reads as one stepped line, not scattered blocks
+- [ ] Score ring gains a factual "Sleep score" label; ring stroke/caps read like Oura's gauge
+- [ ] Contributor bars inset and quieter (thinner track, tighter value column)
+- [ ] Tab bar active state gets an accent treatment
+- [ ] Simulator screenshots dark + light attached to the PR
+
 ## Functional Requirements
 
 - FR-1: Authenticate with the Oura API v2 via OAuth2 authorization-code flow with refresh tokens; tokens and OAuth client credentials stored in iOS Keychain.
