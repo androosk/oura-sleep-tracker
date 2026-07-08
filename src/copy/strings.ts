@@ -7,6 +7,7 @@
 
 export const strings = {
   home: {
+    scoreLabel: 'Sleep score',
     loading: 'Loading sleep data…',
     emptyWindow:
       'No sleep data in the last 90 days. Data appears here after a night of wearing the ring.',

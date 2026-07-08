@@ -9,6 +9,11 @@ describe('ScoreRing (US-005)', () => {
     expect(getByText('82')).toBeTruthy();
   });
 
+  it('labels the ring factually (US-015)', () => {
+    const { getByText } = render(<ScoreRing score={82} />);
+    expect(getByText('Sleep score')).toBeTruthy();
+  });
+
   it.each([
     [85, 'score-ring-optimal'],
     [82, 'score-ring-good'],

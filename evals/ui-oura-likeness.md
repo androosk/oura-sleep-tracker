@@ -14,8 +14,12 @@ understated sans-serif type, generous spacing, data-forward layout.
 ### Home / last night
 
 - [ ] Score ring is the visual anchor: thin stroke, score centered, band color matches the score
+- [ ] Ring carries the "Sleep score" label — the number doesn't float contextless (US-015)
 - [ ] Contributors read as a quiet list with value bars, not a table grid
+- [ ] Contributor bars are inset and understated — thin track, tight value column, no full-bleed (US-015)
 - [ ] Hypnogram stages use 4 distinguishable colors; awake visually "above" deep
+- [ ] Hypnogram reads as ONE stepped line: butted blocks, near-square corners, thin connectors at stage transitions — never scattered confetti (US-015)
+- [ ] A fragmented night renders as a single chart spanning first bedtime → last wake, awake gaps visible between fragments (US-015)
 - [ ] HR/HRV charts are thin lines with visible gaps where data is missing
 - [ ] Background is not pure black (#000) in dark mode; cards are one step lighter
 
@@ -28,6 +32,10 @@ understated sans-serif type, generous spacing, data-forward layout.
 
 - [ ] Period selector looks like a segmented control, not three buttons
 - [ ] Charts are bars/lines with no gridline clutter
+
+### Tab bar
+
+- [ ] Active tab gets an accent treatment (underline/dot), not just a color swap (US-015)
 
 ### Both modes
 

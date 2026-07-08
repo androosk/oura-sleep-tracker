@@ -61,6 +61,15 @@ describe('groupNightsByDay (short/fragmented nights count; naps do not)', () => 
     expect(nights.get('2026-07-07')?.totalSleepSeconds).toBe(12600);
   });
 
+  it('retains every contributing session for the composite night (US-015)', () => {
+    const nights = groupNightsByDay([
+      doc({ id: 'short', day: '2026-07-07', type: 'sleep', total: 5400 }),
+      doc({ id: 'nap', day: '2026-07-07', type: 'late_nap', total: 2400 }),
+      doc({ id: 'long', day: '2026-07-07', type: 'sleep', total: 7200 }),
+    ]);
+    expect(nights.get('2026-07-07')?.sessions.map((s) => s.id)).toEqual(['short', 'long']);
+  });
+
   it('keeps long_sleep as primary while counting a same-day nap toward the total', () => {
     const nights = groupNightsByDay([
       doc({ id: 'night', day: '2026-07-06', type: 'long_sleep', total: 27120 }),

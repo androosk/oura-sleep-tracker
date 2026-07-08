@@ -23,6 +23,8 @@ const CONTRIBUTING_TYPES: ReadonlySet<SleepDocument['type']> = new Set(['long_sl
 export interface DayNights {
   /** The session rendered as the night's detail (hypnogram, vitals, timing). */
   primary: SleepDocument;
+  /** Every contributing session that day — input for the composite night (US-015). */
+  sessions: SleepDocument[];
   /** Day total across contributing sessions, as shown in history and trends. */
   totalSleepSeconds: number | null;
 }
@@ -44,6 +46,7 @@ export function groupNightsByDay(docs: SleepDocument[]): Map<IsoDate, DayNights>
     byDay.set(doc.day, {
       primary:
         existing && sessionLength(existing.primary) >= sessionLength(doc) ? existing.primary : doc,
+      sessions: [...(existing?.sessions ?? []), doc],
       totalSleepSeconds,
     });
   }

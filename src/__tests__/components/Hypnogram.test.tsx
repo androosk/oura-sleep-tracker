@@ -28,6 +28,11 @@ describe('Hypnogram (US-006)', () => {
     expect(getAllByTestId('hypnogram-segment')).toHaveLength(5);
   });
 
+  it('connects consecutive segments so the chart reads as one stepped line (US-015)', () => {
+    const { getAllByTestId } = renderChart();
+    expect(getAllByTestId('hypnogram-connector')).toHaveLength(4);
+  });
+
   it('labels the axis with local bedtime and wake time', () => {
     const { getByText } = renderChart();
     expect(getByText('1:41 AM')).toBeTruthy();
