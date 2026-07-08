@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react-native';
 
+import { buildCompositeNight } from '../../lib/composite';
 import { HomeScreen } from '../../screens/HomeScreen';
 
 import dailyRealistic from '../fixtures/daily_sleep.realistic.json';
@@ -8,9 +9,9 @@ import sleepRealistic from '../fixtures/sleep.realistic.json';
 import type { DailySleepDocument, SleepDocument } from '../../api/types';
 
 const daily = dailyRealistic.data[0] as unknown as DailySleepDocument;
-const night = sleepRealistic.data[0] as unknown as SleepDocument;
+const composite = buildCompositeNight([sleepRealistic.data[0] as unknown as SleepDocument])!;
 
-describe('HomeScreen states (US-005, FR-12)', () => {
+describe('HomeScreen states (US-005, US-015, FR-12)', () => {
   it('shows a loading state', () => {
     const { getByTestId } = render(<HomeScreen status="loading" />);
     expect(getByTestId('home-loading')).toBeTruthy();
@@ -26,9 +27,9 @@ describe('HomeScreen states (US-005, FR-12)', () => {
     expect(getByTestId('home-no-data')).toBeTruthy();
   });
 
-  it('renders the full night when data is ready', () => {
+  it('renders the full composite night when data is ready', () => {
     const { getByText, getByTestId } = render(
-      <HomeScreen status="ready" daily={daily} night={night} />,
+      <HomeScreen status="ready" daily={daily} composite={composite} />,
     );
     expect(getByTestId('score-ring')).toBeTruthy();
     expect(getByText('82')).toBeTruthy(); // the daily score

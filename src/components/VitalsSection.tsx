@@ -2,38 +2,44 @@ import { type ReactElement } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 
-import { splitSeriesAtGaps } from '../lib/series';
 import { useTheme } from '../theme/ThemeProvider';
 
-import type { SampleSeries, SleepDocument } from '../api/types';
+import type { CompositeNight } from '../lib/composite';
+import type { SeriesPoint } from '../lib/series';
 
 /**
- * Overnight heart rate & HRV charts with summary values (US-007).
- * Charts are built from splitSeriesAtGaps: one polyline per unbroken run,
- * so null samples appear as gaps, never interpolated.
+ * Overnight heart rate & HRV charts with summary values (US-007, US-015).
+ * Runs arrive pre-split and pre-offset from buildCompositeNight: gaps —
+ * within a fragment or between fragments — are never bridged by a line.
  */
 
 export interface VitalsSectionProps {
-  night: SleepDocument;
+  night: CompositeNight;
 }
 
 const CHART_WIDTH = 320;
 const CHART_HEIGHT = 64;
 
-function SeriesChart({ series, testID }: { series: SampleSeries; testID: string }): ReactElement {
+function RunsChart({
+  runs,
+  spanSeconds,
+  testID,
+}: {
+  runs: SeriesPoint[][];
+  spanSeconds: number;
+  testID: string;
+}): ReactElement {
   const theme = useTheme();
-  const runs = splitSeriesAtGaps(series);
   const values = runs.flat().map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const spanSeconds = (series.items.length - 1) * series.interval || 1;
   const spanValue = max - min || 1;
 
-  const x = (offsetSeconds: number) => (offsetSeconds / spanSeconds) * CHART_WIDTH;
+  const x = (offsetSeconds: number) => (offsetSeconds / (spanSeconds || 1)) * CHART_WIDTH;
   const y = (value: number) => CHART_HEIGHT - ((value - min) / spanValue) * (CHART_HEIGHT - 4) - 2;
 
   return (
-    <View testID={testID}>
+    <View testID={testID} style={styles.chart}>
       <Svg width="100%" height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
         {runs.map((run) => (
           <Polyline
@@ -52,15 +58,12 @@ function SeriesChart({ series, testID }: { series: SampleSeries; testID: string 
 export function VitalsSection({ night }: VitalsSectionProps): ReactElement {
   const theme = useTheme();
   const summaries: [string, string][] = [
-    [
-      'Lowest heart rate',
-      night.lowest_heart_rate === null ? '—' : `${night.lowest_heart_rate} bpm`,
-    ],
+    ['Lowest heart rate', night.lowestHeartRate === null ? '—' : `${night.lowestHeartRate} bpm`],
     [
       'Average heart rate',
-      night.average_heart_rate === null ? '—' : `${Math.round(night.average_heart_rate)} bpm`,
+      night.averageHeartRate === null ? '—' : `${Math.round(night.averageHeartRate)} bpm`,
     ],
-    ['Average HRV', night.average_hrv === null ? '—' : `${night.average_hrv} ms`],
+    ['Average HRV', night.averageHrv === null ? '—' : `${Math.round(night.averageHrv)} ms`],
   ];
 
   return (
@@ -73,8 +76,20 @@ export function VitalsSection({ night }: VitalsSectionProps): ReactElement {
           </View>
         ))}
       </View>
-      {night.heart_rate && <SeriesChart series={night.heart_rate} testID="vitals-hr-chart" />}
-      {night.hrv && <SeriesChart series={night.hrv} testID="vitals-hrv-chart" />}
+      {night.heartRateRuns.length > 0 && (
+        <RunsChart
+          runs={night.heartRateRuns}
+          spanSeconds={night.timeInBedSeconds}
+          testID="vitals-hr-chart"
+        />
+      )}
+      {night.hrvRuns.length > 0 && (
+        <RunsChart
+          runs={night.hrvRuns}
+          spanSeconds={night.timeInBedSeconds}
+          testID="vitals-hrv-chart"
+        />
+      )}
     </View>
   );
 }
@@ -95,5 +110,8 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     marginTop: 2,
+  },
+  chart: {
+    marginTop: 8,
   },
 });

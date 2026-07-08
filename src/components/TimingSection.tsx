@@ -4,29 +4,27 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatClockTime, formatDuration, formatPercent } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 
-import type { SleepDocument } from '../api/types';
+import type { CompositeNight } from '../lib/composite';
 
 /**
- * Timing & efficiency facts for a night (US-008). All times render in the
- * device's local timezone via formatClockTime.
+ * Timing & efficiency facts for a night (US-008, US-015). For a fragmented
+ * night these describe the whole span: first bedtime to last wake, summed
+ * sleep, efficiency over the span.
  */
 
 export interface TimingSectionProps {
-  night: SleepDocument;
+  night: CompositeNight;
 }
 
 export function TimingSection({ night }: TimingSectionProps): ReactElement {
   const theme = useTheme();
   const rows: [string, string][] = [
-    ['Bedtime', formatClockTime(night.bedtime_start)],
-    ['Wake time', formatClockTime(night.bedtime_end)],
-    ['Time in bed', formatDuration(night.time_in_bed)],
-    [
-      'Time asleep',
-      night.total_sleep_duration === null ? '—' : formatDuration(night.total_sleep_duration),
-    ],
-    ['Efficiency', night.efficiency === null ? '—' : formatPercent(night.efficiency)],
-    ['Latency', night.latency === null ? '—' : formatDuration(night.latency)],
+    ['Bedtime', formatClockTime(night.bedtimeStart)],
+    ['Wake time', formatClockTime(night.bedtimeEnd)],
+    ['Time in bed', formatDuration(night.timeInBedSeconds)],
+    ['Time asleep', night.totals.asleep === null ? '—' : formatDuration(night.totals.asleep)],
+    ['Efficiency', night.efficiencyPercent === null ? '—' : formatPercent(night.efficiencyPercent)],
+    ['Latency', night.latencySeconds === null ? '—' : formatDuration(night.latencySeconds)],
   ];
 
   return (

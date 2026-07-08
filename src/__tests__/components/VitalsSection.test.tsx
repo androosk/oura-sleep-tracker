@@ -1,15 +1,17 @@
 import { render } from '@testing-library/react-native';
 
 import { VitalsSection } from '../../components/VitalsSection';
+import { buildCompositeNight } from '../../lib/composite';
 
 import sleepRealistic from '../fixtures/sleep.realistic.json';
 
 import type { SleepDocument } from '../../api/types';
 
-const night = sleepRealistic.data[0] as unknown as SleepDocument;
-const nap = sleepRealistic.data[1] as unknown as SleepDocument; // heart_rate/hrv are null
+const night = buildCompositeNight([sleepRealistic.data[0] as unknown as SleepDocument])!;
+// The nap fixture has no heart_rate/hrv samples and no HRV average.
+const nap = buildCompositeNight([sleepRealistic.data[1] as unknown as SleepDocument])!;
 
-describe('VitalsSection (US-007)', () => {
+describe('VitalsSection (US-007/US-015: composite vitals)', () => {
   it('shows lowest HR, rounded average HR, and average HRV', () => {
     const { getByText } = render(<VitalsSection night={night} />);
     expect(getByText('48 bpm')).toBeTruthy();
