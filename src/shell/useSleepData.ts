@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
+import { buildCompositeNight } from '../lib/composite';
 import { localToday } from '../lib/format';
 import { groupNightsByDay } from '../lib/nights';
 import { initialSyncRange, nextBackfillRange } from '../lib/syncPlanner';
 
 import type { OuraClient } from '../api/client';
-import type { DailySleepDocument, IsoDate, SleepDocument } from '../api/types';
+import type { DailySleepDocument, IsoDate } from '../api/types';
+import type { CompositeNight } from '../lib/composite';
 import type { HistoryEntry } from '../components/HistoryList';
 import type { TrendPoint } from '../lib/stats';
 import type { HomeStatus } from '../screens/HomeScreen';
@@ -21,10 +23,10 @@ import type { HomeStatus } from '../screens/HomeScreen';
 export interface SleepData {
   homeStatus: HomeStatus;
   latestDaily?: DailySleepDocument;
-  latestNight?: SleepDocument;
+  latestComposite?: CompositeNight;
   historyEntries: HistoryEntry[];
   trendPoints: TrendPoint[];
-  nightByDay(day: IsoDate): { daily?: DailySleepDocument; night?: SleepDocument };
+  nightByDay(day: IsoDate): { daily?: DailySleepDocument; composite?: CompositeNight };
   loadOlder(): void;
   isStale: boolean;
 }
@@ -64,7 +66,9 @@ export function useSleepData(client: OuraClient): SleepData {
     return {
       homeStatus,
       latestDaily: latestDay ? dailyByDay.get(latestDay) : undefined,
-      latestNight: latestDay ? nightsByDay.get(latestDay)?.primary : undefined,
+      latestComposite: latestDay
+        ? (buildCompositeNight(nightsByDay.get(latestDay)?.sessions ?? []) ?? undefined)
+        : undefined,
       historyEntries: days.map((day) => ({
         day,
         score: dailyByDay.get(day)?.score ?? null,
@@ -75,7 +79,10 @@ export function useSleepData(client: OuraClient): SleepData {
         score: dailyByDay.get(day)?.score ?? null,
         totalSleepSeconds: nightsByDay.get(day)?.totalSleepSeconds ?? null,
       })),
-      nightByDay: (day) => ({ daily: dailyByDay.get(day), night: nightsByDay.get(day)?.primary }),
+      nightByDay: (day) => ({
+        daily: dailyByDay.get(day),
+        composite: buildCompositeNight(nightsByDay.get(day)?.sessions ?? []) ?? undefined,
+      }),
       loadOlder: () => setOldestDay((current) => nextBackfillRange(current).start),
       isStale:
         (dailyQuery.isError || sleepQuery.isError) &&

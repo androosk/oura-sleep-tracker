@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { Fragment, type ReactElement } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatClockTime } from '../lib/format';
@@ -8,9 +8,11 @@ import type { LocalizedTimestamp } from '../api/types';
 import type { SleepStage, StageSegment } from '../lib/phases';
 
 /**
- * Sleep-stage timeline chart (US-006). Each merged segment is a block whose
- * width is its share of the night and whose vertical position reflects stage
- * depth (awake on top, deep at the bottom), like Oura's chart.
+ * Sleep-stage timeline chart (US-006, US-015). Segments are butted blocks at
+ * stage depth (awake on top, deep at the bottom) joined by thin vertical
+ * connectors at each transition, so the chart reads as one stepped line —
+ * like Oura's. For a fragmented night the segments already span the whole
+ * composite (gaps arrive as awake segments from buildCompositeNight).
  */
 
 export interface HypnogramProps {
@@ -20,7 +22,8 @@ export interface HypnogramProps {
 }
 
 const CHART_HEIGHT = 96;
-const BLOCK_HEIGHT = 18;
+const BLOCK_HEIGHT = 14;
+const CONNECTOR_WIDTH = 1.5;
 
 /** Top offset per stage as a fraction of the drawable height. */
 const STAGE_LEVEL: Record<SleepStage, number> = {
@@ -30,6 +33,8 @@ const STAGE_LEVEL: Record<SleepStage, number> = {
   deep: 1,
   unknown: 2 / 3,
 };
+
+const blockTop = (stage: SleepStage): number => STAGE_LEVEL[stage] * (CHART_HEIGHT - BLOCK_HEIGHT);
 
 export function Hypnogram({ segments, bedtimeStart, bedtimeEnd }: HypnogramProps): ReactElement {
   const theme = useTheme();
@@ -45,21 +50,40 @@ export function Hypnogram({ segments, bedtimeStart, bedtimeEnd }: HypnogramProps
   return (
     <View testID="hypnogram">
       <View style={styles.chart}>
-        {segments.map((segment) => (
-          <View
-            key={segment.startOffsetSeconds}
-            testID="hypnogram-segment"
-            style={[
-              styles.segment,
-              {
-                left: `${(segment.startOffsetSeconds / totalSeconds) * 100}%`,
-                width: `${(segment.durationSeconds / totalSeconds) * 100}%`,
-                top: STAGE_LEVEL[segment.stage] * (CHART_HEIGHT - BLOCK_HEIGHT),
-                backgroundColor: stageColor[segment.stage],
-              },
-            ]}
-          />
-        ))}
+        {segments.map((segment, index) => {
+          const next = segments[index + 1];
+          return (
+            <Fragment key={segment.startOffsetSeconds}>
+              <View
+                testID="hypnogram-segment"
+                style={[
+                  styles.segment,
+                  {
+                    left: `${(segment.startOffsetSeconds / totalSeconds) * 100}%`,
+                    width: `${(segment.durationSeconds / totalSeconds) * 100}%`,
+                    top: blockTop(segment.stage),
+                    backgroundColor: stageColor[segment.stage],
+                  },
+                ]}
+              />
+              {next && (
+                <View
+                  testID="hypnogram-connector"
+                  style={[
+                    styles.connector,
+                    {
+                      left: `${(next.startOffsetSeconds / totalSeconds) * 100}%`,
+                      top:
+                        Math.min(blockTop(segment.stage), blockTop(next.stage)) + BLOCK_HEIGHT / 2,
+                      height: Math.abs(blockTop(segment.stage) - blockTop(next.stage)),
+                      backgroundColor: theme.divider,
+                    },
+                  ]}
+                />
+              )}
+            </Fragment>
+          );
+        })}
       </View>
       <View style={styles.axis}>
         <Text style={[styles.axisLabel, { color: theme.textSecondary }]}>
@@ -80,7 +104,12 @@ const styles = StyleSheet.create({
   segment: {
     position: 'absolute',
     height: BLOCK_HEIGHT,
-    borderRadius: 3,
+    borderRadius: 1,
+  },
+  connector: {
+    position: 'absolute',
+    width: CONNECTOR_WIDTH,
+    marginLeft: -CONNECTOR_WIDTH / 2,
   },
   axis: {
     flexDirection: 'row',

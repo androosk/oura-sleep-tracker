@@ -47,7 +47,7 @@ export function MainTabs({ client }: { client: OuraClient }): ReactElement {
 
   let body: ReactElement;
   if (selectedDay) {
-    const { daily, night } = data.nightByDay(selectedDay);
+    const { daily, composite } = data.nightByDay(selectedDay);
     body = (
       <View style={styles.body}>
         <Pressable onPress={() => setSelectedDay(null)} style={styles.backRow}>
@@ -55,21 +55,25 @@ export function MainTabs({ client }: { client: OuraClient }): ReactElement {
           <Text style={{ color: theme.textSecondary }}>{formatDayLabel(selectedDay)}</Text>
         </Pressable>
         <HomeScreen
-          status={daily || night ? 'ready' : 'no-data-last-night'}
+          status={daily || composite ? 'ready' : 'no-data-last-night'}
           daily={daily}
-          night={night}
+          composite={composite}
         />
       </View>
     );
   } else if (tab === 'sleep') {
     body = (
       <View style={styles.body}>
-        {data.latestNight && data.latestNight.day !== today && (
+        {data.latestComposite && data.latestComposite.day !== today && (
           <Text style={[styles.dateNote, { color: theme.textSecondary }]}>
-            {formatDayLabel(data.latestNight.day)}
+            {formatDayLabel(data.latestComposite.day)}
           </Text>
         )}
-        <HomeScreen status={data.homeStatus} daily={data.latestDaily} night={data.latestNight} />
+        <HomeScreen
+          status={data.homeStatus}
+          daily={data.latestDaily}
+          composite={data.latestComposite}
+        />
       </View>
     );
   } else if (tab === 'history') {
@@ -112,6 +116,12 @@ export function MainTabs({ client }: { client: OuraClient }): ReactElement {
             <Text style={{ color: tab === value ? theme.accent : theme.textSecondary }}>
               {label}
             </Text>
+            <View
+              style={[
+                styles.tabIndicator,
+                { backgroundColor: tab === value ? theme.accent : 'transparent' },
+              ]}
+            />
           </Pressable>
         ))}
       </View>
@@ -150,5 +160,11 @@ const styles = StyleSheet.create({
   tabItem: {
     flex: 1,
     alignItems: 'center',
+    gap: 5,
+  },
+  tabIndicator: {
+    width: 20,
+    height: 2,
+    borderRadius: 1,
   },
 });

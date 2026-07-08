@@ -4,24 +4,25 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatDuration } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 
-import type { SleepDocument } from '../api/types';
+import type { CompositeTotals } from '../lib/composite';
 
 /**
- * Stage duration totals row (US-006).
+ * Stage duration totals row (US-006). Totals arrive summed across the
+ * night's fragments (US-015) — recorded stage time only, gaps excluded.
  */
 
 export interface StageTotalsProps {
-  night: SleepDocument;
+  totals: CompositeTotals;
 }
 
-export function StageTotals({ night }: StageTotalsProps): ReactElement {
+export function StageTotals({ totals }: StageTotalsProps): ReactElement {
   const theme = useTheme();
   const entries: [string, number | null][] = [
-    ['Total sleep', night.total_sleep_duration],
-    ['Deep', night.deep_sleep_duration],
-    ['REM', night.rem_sleep_duration],
-    ['Light', night.light_sleep_duration],
-    ['Awake', night.awake_time],
+    ['Total sleep', totals.asleep],
+    ['Deep', totals.deep],
+    ['REM', totals.rem],
+    ['Light', totals.light],
+    ['Awake', totals.awake],
   ];
 
   return (
@@ -43,6 +44,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginTop: 12,
   },
   item: {
     alignItems: 'center',

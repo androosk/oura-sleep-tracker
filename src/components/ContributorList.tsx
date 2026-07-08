@@ -55,22 +55,26 @@ const styles = StyleSheet.create({
   labels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'baseline',
+    marginBottom: 7,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
   },
   value: {
-    fontSize: 15,
+    fontSize: 14,
     fontVariant: ['tabular-nums'],
+    minWidth: 32,
+    textAlign: 'right',
   },
   barTrack: {
-    height: 3,
-    borderRadius: 1.5,
+    height: 2,
+    borderRadius: 1,
     overflow: 'hidden',
+    marginRight: 32,
   },
   barFill: {
-    height: 3,
-    borderRadius: 1.5,
+    height: 2,
+    borderRadius: 1,
   },
 });

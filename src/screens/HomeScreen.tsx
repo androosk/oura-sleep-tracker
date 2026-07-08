@@ -8,10 +8,10 @@ import { StageTotals } from '../components/StageTotals';
 import { TimingSection } from '../components/TimingSection';
 import { VitalsSection } from '../components/VitalsSection';
 import { strings } from '../copy/strings';
-import { parseSleepPhases } from '../lib/phases';
 import { useTheme } from '../theme/ThemeProvider';
 
-import type { DailySleepDocument, SleepDocument } from '../api/types';
+import type { DailySleepDocument } from '../api/types';
+import type { CompositeNight } from '../lib/composite';
 
 /**
  * The last-night screen (US-005..US-008 composed). Presentational: data
@@ -25,7 +25,8 @@ export type HomeStatus = 'loading' | 'empty-window' | 'no-data-last-night' | 're
 export interface HomeScreenProps {
   status: HomeStatus;
   daily?: DailySleepDocument;
-  night?: SleepDocument;
+  /** The whole night, fragments already stitched (US-015). */
+  composite?: CompositeNight;
 }
 
 function Message({ testID, text }: { testID: string; text: string }): ReactElement {
@@ -47,11 +48,11 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-export function HomeScreen({ status, daily, night }: HomeScreenProps): ReactElement {
+export function HomeScreen({ status, daily, composite }: HomeScreenProps): ReactElement {
   if (status === 'loading') return <Message testID="home-loading" text={strings.home.loading} />;
   if (status === 'empty-window')
     return <Message testID="home-empty-window" text={strings.home.emptyWindow} />;
-  if (status === 'no-data-last-night' || !daily || !night)
+  if (status === 'no-data-last-night' || !daily || !composite)
     return <Message testID="home-no-data" text={strings.home.noDataLastNight} />;
 
   return (
@@ -62,17 +63,17 @@ export function HomeScreen({ status, daily, night }: HomeScreenProps): ReactElem
       </Card>
       <Card title="Sleep stages">
         <Hypnogram
-          segments={parseSleepPhases(night.sleep_phase_5_min ?? '')}
-          bedtimeStart={night.bedtime_start}
-          bedtimeEnd={night.bedtime_end}
+          segments={composite.segments}
+          bedtimeStart={composite.bedtimeStart}
+          bedtimeEnd={composite.bedtimeEnd}
         />
-        <StageTotals night={night} />
+        <StageTotals totals={composite.totals} />
       </Card>
       <Card title="Heart rate & HRV">
-        <VitalsSection night={night} />
+        <VitalsSection night={composite} />
       </Card>
       <Card title="Timing">
-        <TimingSection night={night} />
+        <TimingSection night={composite} />
       </Card>
     </ScrollView>
   );

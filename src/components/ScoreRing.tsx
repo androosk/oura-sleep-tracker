@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { strings } from '../copy/strings';
 import { scoreCategory } from '../lib/scoreColor';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -57,6 +58,9 @@ export function ScoreRing({ score }: ScoreRingProps): ReactElement {
         </Svg>
         <View style={styles.scoreOverlay}>
           <Text style={[styles.scoreText, { color: theme.textPrimary }]}>{score ?? '—'}</Text>
+          <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
+            {strings.home.scoreLabel}
+          </Text>
         </View>
       </View>
     </View>
@@ -79,5 +83,11 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 48,
     fontWeight: '200',
+  },
+  scoreLabel: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
   },
 });
