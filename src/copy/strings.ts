@@ -33,6 +33,7 @@ export const strings = {
   connect: {
     title: 'Connect to Oura',
     button: 'Log in with Oura',
+    editCredentials: 'Edit API credentials',
     devRedirectLabel:
       'Development redirect URI — register this in your Oura application while testing in Expo Go:',
   },

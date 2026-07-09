@@ -1,6 +1,12 @@
 import { addDays } from '../lib/syncPlanner';
 
-import { OuraAuthError, OuraHttpError, OuraNetworkError, OuraRateLimitError } from './errors';
+import {
+  OuraAuthError,
+  OuraHttpError,
+  OuraNetworkError,
+  OuraParseError,
+  OuraRateLimitError,
+} from './errors';
 import { parseDailySleepResponse, parseSleepResponse } from './schemas';
 
 import type { DailySleepDocument, DateRange, Paginated, SleepDocument } from './types';
@@ -66,7 +72,11 @@ export function createOuraClient(deps: OuraClientDeps): OuraClient {
       if (response.status === 429) {
         rateLimitAttempts += 1;
         if (rateLimitAttempts >= MAX_RATE_LIMIT_ATTEMPTS) throw new OuraRateLimitError();
-        const retryAfterSeconds = Number(response.headers.get('Retry-After') ?? '1');
+        // Retry-After can be an HTTP-date (RFC 9110): Number() yields NaN,
+        // and setTimeout(NaN) fires immediately — fall back to 1 s. Cap so a
+        // huge value can't hang the UI.
+        const parsed = Number(response.headers.get('Retry-After') ?? '1');
+        const retryAfterSeconds = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 60) : 1;
         await deps.sleep(retryAfterSeconds * 1000);
         continue;
       }
@@ -83,8 +93,17 @@ export function createOuraClient(deps: OuraClientDeps): OuraClient {
     parse: (json: unknown) => Paginated<T>,
   ): Promise<T[]> {
     const documents: T[] = [];
+    const seenTokens = new Set<string>();
     let nextToken: string | null = null;
     do {
+      // A misbehaving server repeating tokens must terminate as an error,
+      // not loop unboundedly.
+      if (nextToken) {
+        if (seenTokens.has(nextToken)) {
+          throw new OuraParseError('Pagination did not terminate: next_token repeated.');
+        }
+        seenTokens.add(nextToken);
+      }
       // Callers pass an inclusive day range; Oura's end_date is exclusive
       // (sandbox-verified 2026-07-07 — start=end returns nothing, and the
       // newest day's sessions were silently missing live), so ask for one

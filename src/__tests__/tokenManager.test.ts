@@ -127,4 +127,19 @@ describe('tokenManager (US-003: single-use refresh token rotation)', () => {
     await manager.logOut();
     expect(fake.saved).toBeNull();
   });
+
+  // Gate fix: a refresh resolving after logOut must not resurrect the session.
+  it('does not resurrect a session when logOut lands during a refresh', async () => {
+    let resolveRefresh!: (value: RefreshResult) => void;
+    const refreshFn = jest
+      .fn<Promise<RefreshResult>, [string]>()
+      .mockReturnValue(new Promise((resolve) => (resolveRefresh = resolve)));
+    const { manager, fake } = makeManager(expiredTokens, refreshFn);
+    const inFlight = manager.getAccessToken();
+    await manager.logOut();
+    resolveRefresh(rotation(2));
+    await expect(inFlight).rejects.toThrow(OuraAuthError);
+    expect(fake.saved).toBeNull();
+    await expect(manager.isLoggedIn()).resolves.toBe(false);
+  });
 });

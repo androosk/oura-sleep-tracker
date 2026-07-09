@@ -27,6 +27,22 @@ describe('HomeScreen states (US-005, US-015, FR-12)', () => {
     expect(getByTestId('home-no-data')).toBeTruthy();
   });
 
+  // Gate fix (MED): a failed fetch with an empty cache must say the API was
+  // unreachable — not masquerade as the FR-12 "no data in 90 days" state.
+  it('shows a factual error state when fetching failed with no cached data', () => {
+    const { getByTestId } = render(<HomeScreen status="error" />);
+    expect(getByTestId('home-error')).toBeTruthy();
+  });
+
+  // Gate fix (LOW): a night with sessions but no daily score doc must still
+  // render the night, with the ring showing no score.
+  it('renders the night with a score-less ring when the daily doc is missing', () => {
+    const { getByTestId, getByText } = render(<HomeScreen status="ready" composite={composite} />);
+    expect(getByTestId('score-ring-none')).toBeTruthy();
+    expect(getByText('—')).toBeTruthy();
+    expect(getByTestId('hypnogram')).toBeTruthy();
+  });
+
   it('renders the full composite night when data is ready', () => {
     const { getByText, getByTestId } = render(
       <HomeScreen status="ready" daily={daily} composite={composite} />,

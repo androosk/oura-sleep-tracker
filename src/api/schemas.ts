@@ -64,26 +64,32 @@ const sleepSchema = z.object({
   total_sleep_duration: nullable(z.number()),
 });
 
-const paginated = <T extends z.ZodType>(documentSchema: T) =>
-  z.object({
-    data: z.array(documentSchema),
-    next_token: z.string().nullable(),
-  });
+// A malformed ENVELOPE throws; a malformed DOCUMENT is dropped so one bad
+// record can't destroy the whole multi-month window (gate finding,
+// 2026-07-08). Nights with dropped documents show as gaps, matching FR-12.
+const envelopeSchema = z.object({
+  data: z.array(z.unknown()),
+  next_token: z.string().nullable().default(null),
+});
 
-function parseOrThrow<T>(schema: z.ZodType<T>, json: unknown): T {
-  const result = schema.safeParse(json);
-  if (!result.success) {
+function parseTolerantly<T>(documentSchema: z.ZodType<T>, json: unknown): Paginated<T> {
+  const envelope = envelopeSchema.safeParse(json);
+  if (!envelope.success) {
     throw new OuraParseError(
-      `The Oura API returned data in an unexpected shape: ${result.error.issues[0]?.path.join('.')}`,
+      `The Oura API returned data in an unexpected shape: ${envelope.error.issues[0]?.path.join('.')}`,
     );
   }
-  return result.data;
+  const documents = envelope.data.data
+    .map((raw) => documentSchema.safeParse(raw))
+    .filter((result): result is { success: true; data: T } => result.success)
+    .map((result) => result.data);
+  return { data: documents, next_token: envelope.data.next_token };
 }
 
 export function parseDailySleepResponse(json: unknown): Paginated<DailySleepDocument> {
-  return parseOrThrow(paginated(dailySleepSchema), json);
+  return parseTolerantly(dailySleepSchema, json);
 }
 
 export function parseSleepResponse(json: unknown): Paginated<SleepDocument> {
-  return parseOrThrow(paginated(sleepSchema), json);
+  return parseTolerantly(sleepSchema, json);
 }

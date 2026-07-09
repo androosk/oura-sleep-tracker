@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { buildCompositeNight } from '../lib/composite';
@@ -36,13 +36,18 @@ export function useSleepData(client: OuraClient): SleepData {
   const [oldestDay, setOldestDay] = useState<IsoDate>(() => initialSyncRange(today).start);
   const range = { start: oldestDay, end: today };
 
+  // keepPreviousData: when the range grows (backfill) or the day rolls over,
+  // keep showing the previous window's data instead of blanking the UI while
+  // the new window fetches (gate finding, 2026-07-08).
   const dailyQuery = useQuery({
     queryKey: ['daily_sleep', range.start, range.end],
     queryFn: () => client.fetchDailySleep(range),
+    placeholderData: keepPreviousData,
   });
   const sleepQuery = useQuery({
     queryKey: ['sleep', range.start, range.end],
     queryFn: () => client.fetchSleepSessions(range),
+    placeholderData: keepPreviousData,
   });
 
   return useMemo(() => {
@@ -56,9 +61,15 @@ export function useSleepData(client: OuraClient): SleepData {
     const days = [...new Set([...dailyByDay.keys(), ...nightsByDay.keys()])].sort();
     const latestDay = days[days.length - 1];
 
-    const isLoading = dailyQuery.isPending || sleepQuery.isPending;
+    const isLoading =
+      (dailyQuery.isPending && !dailyQuery.isError) ||
+      (sleepQuery.isPending && !sleepQuery.isError);
+    const fetchFailed = dailyQuery.isError || sleepQuery.isError;
     let homeStatus: HomeStatus;
     if (isLoading) homeStatus = 'loading';
+    // A failed fetch with nothing cached is an error, not an empty window —
+    // claiming "no data in 90 days" here would be false (gate finding).
+    else if (days.length === 0 && fetchFailed) homeStatus = 'error';
     else if (days.length === 0) homeStatus = 'empty-window';
     else if (!nightsByDay.get(latestDay)) homeStatus = 'no-data-last-night';
     else homeStatus = 'ready';
@@ -83,17 +94,22 @@ export function useSleepData(client: OuraClient): SleepData {
         daily: dailyByDay.get(day),
         composite: buildCompositeNight(nightsByDay.get(day)?.sessions ?? []) ?? undefined,
       }),
-      loadOlder: () => setOldestDay((current) => nextBackfillRange(current).start),
-      isStale:
-        (dailyQuery.isError || sleepQuery.isError) &&
-        (dailyDocs.length > 0 || nightsByDay.size > 0),
+      // Guarded: growing the window while a fetch is already in flight
+      // compounds into cascading full-window refetches (gate finding).
+      loadOlder: () => {
+        if (dailyQuery.isFetching || sleepQuery.isFetching) return;
+        setOldestDay((current) => nextBackfillRange(current).start);
+      },
+      isStale: fetchFailed && (dailyDocs.length > 0 || nightsByDay.size > 0),
     };
   }, [
     dailyQuery.data,
     dailyQuery.isPending,
     dailyQuery.isError,
+    dailyQuery.isFetching,
     sleepQuery.data,
     sleepQuery.isPending,
     sleepQuery.isError,
+    sleepQuery.isFetching,
   ]);
 }

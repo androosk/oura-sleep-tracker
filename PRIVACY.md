@@ -19,8 +19,11 @@ own device and Oura's own services.
 **What this app collects, transmits, or sells: nothing.** No analytics, no
 telemetry, no ads, no third-party SDKs that phone home.
 
-**Removal.** Deleting the app deletes everything it stored. You can also
-revoke the app's API access at any time in your Oura account settings.
+**Removal.** Deleting the app deletes the cached sleep data. iOS may retain
+Keychain entries (your API credentials and tokens) after an uninstall — to
+fully sever access, also revoke the application in your Oura account
+settings, which invalidates the tokens regardless of what the Keychain
+holds.
 
 Oura's own [privacy policy](https://ouraring.com/privacy-policy) governs the
 data Oura itself holds.

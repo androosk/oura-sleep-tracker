@@ -96,19 +96,34 @@ export function buildCompositeNight(sessions: SleepDocument[]): CompositeNight |
     }
   };
 
+  // pushClamped trims anything that would start before already-covered time:
+  // Oura pads phase strings to 5-minute blocks, so a fragment's coverage can
+  // overrun into the next fragment's start (gate finding, 2026-07-08) —
+  // overlapping segments would corrupt the hypnogram.
   let coveredUpTo = 0;
+  const pushClamped = (
+    stage: StageSegment['stage'],
+    startOffsetSeconds: number,
+    durationSeconds: number,
+  ) => {
+    const end = startOffsetSeconds + durationSeconds;
+    if (end <= coveredUpTo) return;
+    const start = Math.max(startOffsetSeconds, coveredUpTo);
+    push(stage, start, end - start);
+  };
+
   for (const doc of sorted) {
     const docOffset = (epochMs(doc.bedtime_start) - startMs) / 1000;
-    push('awake', coveredUpTo, docOffset - coveredUpTo);
+    pushClamped('awake', coveredUpTo, docOffset - coveredUpTo);
     if (doc.sleep_phase_5_min) {
       for (const segment of parseSleepPhases(doc.sleep_phase_5_min)) {
-        push(segment.stage, docOffset + segment.startOffsetSeconds, segment.durationSeconds);
+        pushClamped(segment.stage, docOffset + segment.startOffsetSeconds, segment.durationSeconds);
       }
-      coveredUpTo = docOffset + doc.sleep_phase_5_min.length * 300;
+      coveredUpTo = Math.max(coveredUpTo, docOffset + doc.sleep_phase_5_min.length * 300);
     } else {
       const span = (epochMs(doc.bedtime_end) - epochMs(doc.bedtime_start)) / 1000;
-      push('unknown', docOffset, span);
-      coveredUpTo = docOffset + span;
+      pushClamped('unknown', docOffset, span);
+      coveredUpTo = Math.max(coveredUpTo, docOffset + span);
     }
   }
 
