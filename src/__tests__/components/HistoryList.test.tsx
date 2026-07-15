@@ -59,4 +59,16 @@ describe('HistoryList (US-009)', () => {
     expect(queryAllByTestId(/^history-row-/)).toHaveLength(0);
     expect(getByTestId('history-empty')).toBeTruthy();
   });
+
+  // Gate fix (HIGH): RN fires onEndReached on every content-size change,
+  // including an empty first mount — an unguarded call chain-reacts into
+  // ever-growing backfill fetches.
+  it('never requests older data while the list is empty', () => {
+    const onLoadOlder = jest.fn();
+    const { getByTestId } = render(
+      <HistoryList nights={[]} onSelectNight={noop} onLoadOlder={onLoadOlder} />,
+    );
+    fireEvent(getByTestId('history-list'), 'endReached');
+    expect(onLoadOlder).not.toHaveBeenCalled();
+  });
 });

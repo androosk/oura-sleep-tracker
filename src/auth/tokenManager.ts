@@ -56,6 +56,11 @@ export function createTokenManager(deps: TokenManagerDeps): TokenManager {
     }
     try {
       const result = await deps.refreshFn(stored.refreshToken);
+      // logOut may have landed while the refresh was in flight; saving now
+      // would resurrect a session the user ended.
+      if ((await deps.store.load()) === null) {
+        throw new OuraAuthError('Logged out while a refresh was in flight.');
+      }
       const rotated: StoredTokens = {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,

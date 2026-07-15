@@ -20,7 +20,7 @@ import type { CompositeNight } from '../lib/composite';
  * window, e.g. the ring hasn't been worn in months.
  */
 
-export type HomeStatus = 'loading' | 'empty-window' | 'no-data-last-night' | 'ready';
+export type HomeStatus = 'loading' | 'empty-window' | 'no-data-last-night' | 'error' | 'ready';
 
 export interface HomeScreenProps {
   status: HomeStatus;
@@ -52,15 +52,18 @@ export function HomeScreen({ status, daily, composite }: HomeScreenProps): React
   if (status === 'loading') return <Message testID="home-loading" text={strings.home.loading} />;
   if (status === 'empty-window')
     return <Message testID="home-empty-window" text={strings.home.emptyWindow} />;
-  if (status === 'no-data-last-night' || !daily || !composite)
+  if (status === 'error') return <Message testID="home-error" text={strings.errors.network} />;
+  if (status === 'no-data-last-night' || !composite)
     return <Message testID="home-no-data" text={strings.home.noDataLastNight} />;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <ScoreRing score={daily.score} />
-      <Card title="Sleep contributors">
-        <ContributorList contributors={daily.contributors} />
-      </Card>
+      <ScoreRing score={daily?.score ?? null} />
+      {daily && (
+        <Card title="Sleep contributors">
+          <ContributorList contributors={daily.contributors} />
+        </Card>
+      )}
       <Card title="Sleep stages">
         <Hypnogram
           segments={composite.segments}

@@ -145,4 +145,23 @@ describe('encryptedStorage (audit finding: health data must be ciphertext at res
     expect(data.map.has('cache')).toBe(false);
     await expect(storage.getItem('cache')).resolves.toBeNull();
   });
+
+  // Gate fix: one transient Keychain failure must not kill the cache for the
+  // whole app session — the key lookup retries on the next call.
+  it('recovers from a transient keychain failure on the next operation', async () => {
+    const data = makeDataStore();
+    const keychain = makeKeychain();
+    const failingGet = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('keychain unavailable'))
+      .mockImplementation(keychain.store.getItemAsync);
+    const storage = createEncryptedStorage({
+      data: data.store,
+      keychain: { ...keychain.store, getItemAsync: failingGet },
+      randomBytes: makeRandomBytes(),
+    });
+    await expect(storage.setItem('cache', PAYLOAD)).rejects.toThrow();
+    await expect(storage.setItem('cache', PAYLOAD)).resolves.toBeUndefined();
+    await expect(storage.getItem('cache')).resolves.toBe(PAYLOAD);
+  });
 });

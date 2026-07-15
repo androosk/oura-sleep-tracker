@@ -144,6 +144,33 @@ describe('buildCompositeNight (US-015: fragmented nights become one view)', () =
     expect(buildCompositeNight([fragmentB, fragmentA])).toEqual(composite());
   });
 
+  // Gate fix: Oura pads phase strings to 5-minute blocks, so a fragment's
+  // phases can overrun into the next fragment's start. Overlapping segments
+  // broke the hypnogram (duplicate offsets, compressed axis) — later
+  // fragments are clamped to start after already-covered time.
+  it('clamps overlapping phase coverage so segments never overlap', () => {
+    // A's phases cover 1200 s but B starts at 900 s.
+    const overrunning = {
+      ...fragmentA,
+      sleep_phase_5_min: '2222',
+      bedtime_end: '2026-07-06T23:15:00-05:00',
+    };
+    const bAt900 = {
+      ...fragmentB,
+      bedtime_start: '2026-07-06T23:15:00-05:00',
+      bedtime_end: '2026-07-06T23:25:00-05:00',
+    };
+    const segments = buildCompositeNight([overrunning, bAt900])!.segments;
+    for (let i = 1; i < segments.length; i++) {
+      const previousEnd = segments[i - 1].startOffsetSeconds + segments[i - 1].durationSeconds;
+      expect(segments[i].startOffsetSeconds).toBeGreaterThanOrEqual(previousEnd);
+    }
+    expect(segments).toEqual([
+      { stage: 'light', startOffsetSeconds: 0, durationSeconds: 1200 },
+      { stage: 'rem', startOffsetSeconds: 1200, durationSeconds: 300 },
+    ]);
+  });
+
   it('is equivalent to the fragment for a single-session night (regression)', () => {
     const single = buildCompositeNight([base])!;
     expect(single.bedtimeStart).toBe(base.bedtime_start);

@@ -30,12 +30,25 @@ describe('parseDailySleepResponse (US-004)', () => {
     expect(result.data[0]).not.toHaveProperty('some_future_field');
   });
 
-  it.each([[null], [{ data: 'not-an-array' }], [{ data: [{ id: 5 }], next_token: null }]])(
-    'throws OuraParseError on malformed input %#',
+  it.each([[null], [{ data: 'not-an-array' }]])(
+    'throws OuraParseError on a malformed envelope %#',
     (input) => {
       expect(() => parseDailySleepResponse(input)).toThrow(OuraParseError);
     },
   );
+
+  // Gate fix: one malformed document must not destroy the whole window —
+  // invalid documents are dropped, valid ones survive.
+  it('drops a malformed document and keeps the valid ones', () => {
+    const mixed = { data: [{ id: 5 }, dailyRealistic.data[0]], next_token: null };
+    const result = parseDailySleepResponse(mixed);
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].day).toBe('2026-07-03');
+  });
+
+  it('tolerates an absent next_token (defaults to null)', () => {
+    expect(parseDailySleepResponse({ data: [] }).next_token).toBeNull();
+  });
 });
 
 describe('parseSleepResponse (US-004)', () => {
@@ -61,9 +74,10 @@ describe('parseSleepResponse (US-004)', () => {
     expect(result.data.length).toBeGreaterThan(0);
   });
 
-  it('throws OuraParseError when a document is structurally broken', () => {
-    expect(() => parseSleepResponse({ data: [{ id: 'x' }], next_token: null })).toThrow(
-      OuraParseError,
-    );
+  it('drops a structurally broken document and keeps the valid ones', () => {
+    const mixed = { data: [{ id: 'x' }, sleepRealistic.data[0]], next_token: null };
+    const result = parseSleepResponse(mixed);
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].type).toBe('long_sleep');
   });
 });

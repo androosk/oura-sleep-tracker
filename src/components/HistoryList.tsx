@@ -45,7 +45,12 @@ export function HistoryList({
       testID="history-list"
       data={sorted}
       keyExtractor={(entry) => entry.day}
-      onEndReached={onLoadOlder}
+      // Guarded: RN fires onEndReached on any content-size change, including
+      // an empty first mount — unguarded, that chain-reacts into endless
+      // backfill fetches (gate finding, 2026-07-08).
+      onEndReached={() => {
+        if (sorted.length > 0) onLoadOlder();
+      }}
       onEndReachedThreshold={0.5}
       ListEmptyComponent={
         <View testID="history-empty" style={styles.empty}>

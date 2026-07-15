@@ -11,6 +11,8 @@ import { useTheme } from '../theme/ThemeProvider';
 
 export interface ConnectScreenProps {
   onConnect(): void;
+  /** Path back to the credential setup screen — mistyped credentials must never strand the user here. */
+  onEditCredentials?(): void;
   loggedOutReason?: 'session-expired' | 'login-failed';
   /**
    * The redirect URI the OAuth request will actually use. Shown only in dev
@@ -23,6 +25,7 @@ export interface ConnectScreenProps {
 
 export function ConnectScreen({
   onConnect,
+  onEditCredentials,
   loggedOutReason,
   devRedirectUri,
 }: ConnectScreenProps): ReactElement {
@@ -55,6 +58,13 @@ export function ConnectScreen({
           {strings.connect.button}
         </Text>
       </Pressable>
+      {onEditCredentials && (
+        <Pressable testID="connect-edit-credentials" onPress={onEditCredentials}>
+          <Text style={[styles.secondaryAction, { color: theme.textSecondary }]}>
+            {strings.connect.editCredentials}
+          </Text>
+        </Pressable>
+      )}
       {__DEV__ && devRedirectUri && (
         <Text
           testID="connect-dev-redirect"
@@ -93,6 +103,10 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  secondaryAction: {
+    fontSize: 14,
+    marginTop: 8,
   },
   devRedirect: {
     fontSize: 12,

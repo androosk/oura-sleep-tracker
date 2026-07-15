@@ -117,6 +117,37 @@ describe('OuraClient (US-004)', () => {
     await expect(client.fetchDailySleep(range)).rejects.toThrow(OuraRateLimitError);
   });
 
+  // Gate fix: Retry-After may be an HTTP-date (RFC 9110) — Number() yields
+  // NaN, which setTimeout treats as 0 → hammering retries. Fall back to 1 s
+  // and cap huge values.
+  it('falls back to a sane wait when Retry-After is not a number', async () => {
+    const { client, sleep } = makeClient([
+      response(429, {}, { 'retry-after': 'Wed, 21 Oct 2026 07:28:00 GMT' }),
+      response(200, okPage(null)),
+    ]);
+    await client.fetchDailySleep(range);
+    expect(sleep).toHaveBeenCalledWith(1000);
+  });
+
+  it('caps an oversized Retry-After', async () => {
+    const { client, sleep } = makeClient([
+      response(429, {}, { 'retry-after': '86400' }),
+      response(200, okPage(null)),
+    ]);
+    await client.fetchDailySleep(range);
+    expect(sleep).toHaveBeenCalledWith(60_000);
+  });
+
+  // Gate fix: a server repeating next_token forever must terminate as an
+  // error, not loop unboundedly.
+  it('aborts pagination when next_token repeats', async () => {
+    const { client } = makeClient([
+      response(200, okPage('same-token')),
+      response(200, okPage('same-token')),
+    ]);
+    await expect(client.fetchDailySleep(range)).rejects.toThrow(OuraParseError);
+  });
+
   it('wraps fetch failures in OuraNetworkError', async () => {
     const { client } = makeClient([new TypeError('Network request failed')]);
     await expect(client.fetchDailySleep(range)).rejects.toThrow(OuraNetworkError);

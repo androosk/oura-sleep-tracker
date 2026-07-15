@@ -47,6 +47,11 @@ export function createEncryptedStorage(deps: EncryptedStorageDeps): AsyncKV {
         await deps.keychain.setItemAsync(KEY_KEYCHAIN_ENTRY, bytesToHex(fresh));
         return fresh;
       })();
+      // A transient Keychain failure (e.g. device briefly locked) must not
+      // poison the cache for the whole app session — retry on the next call.
+      keyPromise.catch(() => {
+        keyPromise = null;
+      });
     }
     return keyPromise;
   }

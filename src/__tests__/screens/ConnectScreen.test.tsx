@@ -43,4 +43,15 @@ describe('ConnectScreen (US-003)', () => {
     const { queryByTestId } = render(<ConnectScreen onConnect={() => {}} />);
     expect(queryByTestId('connect-dev-redirect')).toBeNull();
   });
+
+  // Gate fix (HIGH): mistyped credentials previously stranded the user on
+  // this screen forever — there must always be a path back to Setup.
+  it('offers a way back to credential setup', () => {
+    const onEditCredentials = jest.fn();
+    const { getByTestId } = render(
+      <ConnectScreen onConnect={() => {}} onEditCredentials={onEditCredentials} />,
+    );
+    fireEvent.press(getByTestId('connect-edit-credentials'));
+    expect(onEditCredentials).toHaveBeenCalledTimes(1);
+  });
 });

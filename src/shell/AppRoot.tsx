@@ -10,6 +10,7 @@ import { exchangeCode, refreshTokens } from '../auth/tokenEndpoint';
 import { createTokenManager } from '../auth/tokenManager';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { createLoginExchanger } from './loginExchange';
+import { clearSleepDataCache } from './queryCache';
 import { SetupScreen } from '../screens/SetupScreen';
 import { useTheme } from '../theme/ThemeProvider';
 import { MainTabs } from './MainTabs';
@@ -57,6 +58,9 @@ export function AppRoot(): ReactElement {
       refreshFn: (refreshToken) => refreshTokens({ ...credentials, refreshToken }),
       now: Date.now,
       onLoggedOut: () => {
+        // Cached sleep data carries no account identity — wipe it so a
+        // subsequent login (possibly another account) starts clean.
+        void clearSleepDataCache();
         setSessionExpired(true);
         setStage('needs-login');
       },
@@ -93,12 +97,18 @@ export function AppRoot(): ReactElement {
     });
   }, [credentials]);
 
+  // Oura refusing consent is a fact worth stating (derived, not stored); a
+  // dismissed sheet is the user changing their mind and needs no message.
+  const consentDenied = response?.type === 'error';
+
   useEffect(() => {
     if (response?.type !== 'success' || !exchanger) return;
     let cancelled = false;
     void exchanger.complete(response.params.code).then((outcome) => {
       if (cancelled || outcome === 'duplicate') return;
       if (outcome === 'completed') {
+        // Fresh login: wipe any cached data from a previous session/account.
+        void clearSleepDataCache();
         setSessionExpired(false);
         setLoginFailed(false);
         setStage('ready');
@@ -134,8 +144,17 @@ export function AppRoot(): ReactElement {
           onConnect={() => {
             if (request) void promptAsync();
           }}
+          onEditCredentials={() => {
+            setSessionExpired(false);
+            setLoginFailed(false);
+            setStage('needs-setup');
+          }}
           loggedOutReason={
-            sessionExpired ? 'session-expired' : loginFailed ? 'login-failed' : undefined
+            sessionExpired
+              ? 'session-expired'
+              : loginFailed || consentDenied
+                ? 'login-failed'
+                : undefined
           }
           devRedirectUri={redirectUri}
         />
